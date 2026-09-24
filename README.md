@@ -15,7 +15,10 @@ se o tráfego vai para a outra.
 
 ## Rotas
 
-**`GET /health`** — é o que o Cloudflare consulta.
+**`GET /health`** e **`GET /check`** — é o que o Cloudflare consulta. Os dois
+caminhos são equivalentes: mesmo status, mesmo corpo, mesmos headers. `/check`
+existe para o monitor usar um caminho só em todas as origens, já que o serviço
+real expõe o health check nesse caminho.
 
 - Arquivo `/tmp/health_off` existe → **500** `{"status":"off","servidor":"<NOME_SERVIDOR>"}`
 - Caso contrário → **200** `{"status":"ok","servidor":"<NOME_SERVIDOR>"}`
@@ -37,8 +40,19 @@ O arquivo é verificado a cada requisição, nunca em cache.
 `host` é o header `Host` recebido — serve para conferir se o override de Host
 header do load balancer está chegando certo.
 
-Todas as respostas saem com `Content-Type: application/json` e
-`Cache-Control: no-store`, para o CDN não cachear e falsear o teste de failover.
+## Headers
+
+Todas as respostas — inclusive as de erro e as do health check — saem com:
+
+| Header | Valor | Para que |
+|---|---|---|
+| `Content-Type` | `application/json` | Corpo é sempre JSON |
+| `Cache-Control` | `no-store` | CDN não cacheia e não falseia o teste de failover |
+| `X-Skale-Node` | `<NOME_SERVIDOR>` | Identifica a origem sem depender do corpo |
+
+```bash
+curl -sS -D- -o/dev/null https://a.exemplo.com/check
+```
 
 ## Build e run
 

@@ -17,6 +17,8 @@ function responder(res, status, corpo) {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store',
     'Content-Length': Buffer.byteLength(payload),
+    // Identifica a origem sem depender do corpo da resposta.
+    'X-Skale-Node': NOME_SERVIDOR,
   });
   res.end(payload);
 }
@@ -41,7 +43,8 @@ const server = http.createServer((req, res) => {
   const caminho = caminhoDe(req.url || '/');
 
   let status;
-  if (caminho === '/health') {
+  // /check e apelido de /health: o monitor usa um caminho so para todas as origens.
+  if (caminho === '/health' || caminho === '/check') {
     status = saudeDesligada() ? 500 : 200;
     responder(res, status, {
       status: status === 200 ? 'ok' : 'off',
